@@ -3,7 +3,14 @@
   publish = "." # Your HTML files are in the root
   functions = "netlify/functions" # Where your serverless functions will live
 
+# This rule makes your function URLs cleaner
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
+  status = 200
+
+# Add this new rule to set your homepage
+[[redirects]]
+  from = "/"
+  to = "/home_page.html"
   status = 200
