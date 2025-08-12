@@ -1,0 +1,9 @@
+# file: netlify.toml
+[build]
+  publish = "." # Your HTML files are in the root
+  functions = "netlify/functions" # Where your serverless functions will live
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
