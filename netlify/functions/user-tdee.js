@@ -19,9 +19,6 @@ exports.handler = async (event) => {
 
     const calorieData = await Calorie.findOne({ userId: decoded.userId });
 
-    // --- THIS IS THE FIX ---
-    // If no data is found (e.g., a new user), return a successful
-    // response with a default TDEE value instead of an error.
     if (!calorieData || !calorieData.tdee) {
       console.log(`No TDEE found for user ${decoded.userId}, returning a default value.`);
       return { 
