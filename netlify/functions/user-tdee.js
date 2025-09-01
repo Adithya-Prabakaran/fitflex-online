@@ -3,7 +3,6 @@ const connectToDatabase = require('./utils/database');
 const verifyToken = require('./utils/auth');
 
 exports.handler = async (event) => {
-  // This function only handles GET requests
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -15,22 +14,25 @@ exports.handler = async (event) => {
     }
 
     const db = await connectToDatabase();
-    const Calorie = db.model('Calorie');
+    // --- THIS IS THE CHANGE ---
+    // Read from the 'Energy' model to match the update-profile function.
+    const Energy = db.model('Energy');
 
-    const calorieData = await Calorie.findOne({ userId: decoded.userId });
+    // Find the TDEE data for the logged-in user
+    const energyData = await Energy.findOne({ userId: decoded.userId });
 
-    if (!calorieData || !calorieData.tdee) {
-      console.log(`No TDEE found for user ${decoded.userId}, returning a default value.`);
+    // If no data is found, return a successful response with a default TDEE
+    if (!energyData || !energyData.tdee) {
       return { 
         statusCode: 200, 
         body: JSON.stringify({ tdee: 2000 }) // Default TDEE
       };
     }
     
-    // If data IS found, return it as before.
+    // If data IS found, return it.
     return { 
       statusCode: 200, 
-      body: JSON.stringify({ tdee: Math.round(calorieData.tdee) }) 
+      body: JSON.stringify({ tdee: Math.round(energyData.tdee) }) 
     };
 
   } catch (error) {
@@ -38,6 +40,6 @@ exports.handler = async (event) => {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized: ' + error.message }) };
     }
-    return { statusCode: 500, body: JSON.stringify({ error: 'Server error' }) };
+    return { statusCode: 500, body: JSON.stringify({ error: 'Internal server error' }) };
   }
 };
