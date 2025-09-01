@@ -16,8 +16,9 @@ exports.handler = async (event) => {
     const db = await connectToDatabase();
     const User = db.model('User');
     const BMI = db.model('BMI');
-    // --- CHANGE 1: Using 'Energy' model to match your 'energy' collection ---
-    const Energy = db.model('Energy'); 
+    // --- THIS IS THE FIX ---
+    // Use the 'Calorie' model name, which your database.js file maps to the 'energy' collection.
+    const Calorie = db.model('Calorie'); 
     
     const data = JSON.parse(event.body);
 
@@ -26,6 +27,7 @@ exports.handler = async (event) => {
       return { statusCode: 404, body: JSON.stringify({ error: 'User not found' }) };
     }
 
+    // Update the main user document with the new profile data
     user.name = data.name || user.name;
     user.age = data.age || user.age;
     user.gender = data.gender || user.gender;
@@ -34,8 +36,10 @@ exports.handler = async (event) => {
     user.activityLevel = data.activityLevel || user.activityLevel;
     await user.save();
 
+    // If all required fields are present, calculate and save BMR/TDEE
     if (data.height && data.weight && data.age && data.gender && data.activityLevel) {
-      // Update the BMI collection (this part is unchanged)
+      
+      // Update the 'bmi' collection
       await BMI.findOneAndUpdate(
         { email: user.email }, 
         { 
@@ -56,33 +60,35 @@ exports.handler = async (event) => {
         'Extra active': 1.9
       };
 
+      // Calculate BMR (Basal Metabolic Rate)
       let bmr;
       if (data.gender.toLowerCase() === 'male') {
         bmr = (10 * data.weight) + (6.25 * data.height) - (5 * data.age) + 5;
-      } else {
+      } else { // Covers 'female' and 'other'
         bmr = (10 * data.weight) + (6.25 * data.height) - (5 * data.age) - 161;
       }
 
+      // Calculate TDEE (Total Daily Energy Expenditure)
       const activityFactor = activityMultipliers[data.activityLevel] || 1.2;
       const tdee = Math.round(bmr * activityFactor);
 
-      // --- CHANGE 2: Update the 'Energy' collection with all required fields ---
-      await Energy.findOneAndUpdate(
-        { userId: user._id }, // Find the document by userId
+      // Update the 'energy' collection using the 'Calorie' model
+      await Calorie.findOneAndUpdate(
+        { userId: user._id }, // Find the document by the user's ID
         {
-          // Use $set to update fields every time
+          // $set updates these fields every time the profile is saved
           $set: {
             userId: user._id,
             email: user.email,
-            bmr: Math.round(bmr), // Save the calculated BMR
-            tdee: tdee            // Save the calculated TDEE
+            bmr: Math.round(bmr),
+            tdee: tdee
           },
-          // Use $setOnInsert to set a value ONLY when a new document is created
+          // $setOnInsert only sets this field when the document is first created
           $setOnInsert: {
-            createdAt: new Date() // Save the creation timestamp
+            createdAt: new Date()
           }
         },
-        { upsert: true, new: true } // Create the document if it doesn't exist
+        { upsert: true, new: true } // Creates the document if it doesn't exist
       );
     }
 
