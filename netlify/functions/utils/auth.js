@@ -1,17 +1,20 @@
-// file: netlify/functions/utils/auth.js
+// File: netlify/functions/utils/auth.js
 const jwt = require('jsonwebtoken');
 
-// This helper function verifies the JWT from the request headers
 const verifyToken = (event) => {
   const authHeader = event.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // Throws an error that can be caught by the calling function
-    throw new Error('401');
+    // This custom error will be caught in the function that calls this utility
+    const error = new Error('No token provided or malformed header');
+    error.name = 'AuthError';
+    throw error;
   }
   
   const token = authHeader.split(' ')[1];
+  
+  // Let jwt.verify throw its own specific errors (JsonWebTokenError, TokenExpiredError)
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  return decoded; // Returns the payload, e.g., { userId: '...', email: '...' }
+  return decoded; // Returns the payload, e.g., { userId: '...' }
 };
 
 module.exports = verifyToken;
