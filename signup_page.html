@@ -63,7 +63,7 @@
       <div class="signup-container">
       <main id="signup-page">
         <h2>Sign Up</h2>
-        <form class="auth-form" method="POST" action="/signup">
+        <form class="auth-form">
           <div class="form-row">
             <div class="form-column">
               <label for="name">Name:</label>
@@ -109,7 +109,7 @@
               <input type="password" id="confirm-pwd" name="confirm-pwd" placeholder="Confirm your Password" required />
               <span id="confirmPwdError" class="error"></span>
             </div>
-          </div>          
+          </div>        
           
           <button type="submit">Sign Up</button>
 
@@ -118,56 +118,60 @@
       </main>
     </div>
     <script>
-  document.querySelector('.auth-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    var password = document.getElementById('password').value;
-    var confirmPwd = document.getElementById('confirm-pwd').value;
-    var passwordError = document.getElementById('passwordError');
-    var confirmPwdError = document.getElementById('confirmPwdError');
-    
-    passwordError.textContent = '';
-    confirmPwdError.textContent = '';
-    
-    if (password !== confirmPwd) {
-      confirmPwdError.textContent = 'Passwords do not match';
-      return;
-    }
+      document.querySelector('.auth-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const password = document.getElementById('password').value;
+        const confirmPwd = document.getElementById('confirm-pwd').value;
+        const confirmPwdError = document.getElementById('confirmPwdError');
+        
+        confirmPwdError.textContent = '';
+        
+        if (password !== confirmPwd) {
+          confirmPwdError.textContent = 'Passwords do not match';
+          return;
+        }
 
-    // Create form data object
-    const formData = {
-      name: document.getElementById('name').value,
-      email: document.getElementById('email').value,
-      age: document.getElementById('age').value,
-      gender: document.getElementById('gender').value,
-      password: password
-    };
+        const formData = {
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          age: document.getElementById('age').value,
+          gender: document.getElementById('gender').value,
+          password: password
+        };
 
-    // Submit data to your new serverless function endpoint
-    fetch('/api/signup', { // This is the only line that changed
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    })
-    .then(response => {
-      if (!response.ok) {
-        // Handle errors from the serverless function
-        return response.text().then(text => {
-          throw new Error(text || 'Error registering user');
-        });
-      }
-      return response.text();
-    })
-    .then(data => {
-      alert('Registration successful!');
-      window.location.href = 'login_page.html'; // Redirect to login page
-    })
-    .catch(error => {
-      alert('Registration failed: ' + error.message);
-    });
-  });
-  </script> 
+        try {
+          const response = await fetch('/api/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            // If the server returns an error (like "Email already registered"), throw it
+            throw new Error(data.error || 'Registration failed.');
+          }
+
+          // --- THIS IS THE FIX ---
+          // 1. Check if a token was received
+          if (data.token) {
+            // 2. Save the token to localStorage, effectively logging the user in
+            localStorage.setItem('fitflex_token', data.token);
+            // 3. Redirect to the main home page, NOT the login page
+            window.location.href = 'home_page.html';
+          } else {
+            // This case should not happen with the new backend, but it's good practice
+            throw new Error('Registration succeeded but no token was provided.');
+          }
+          // -----------------------
+
+        } catch (error) {
+          // Display a more specific error message from the server
+          alert('Registration failed: ' + error.message);
+        }
+      });
+    </script> 
   </body>
 </html>
