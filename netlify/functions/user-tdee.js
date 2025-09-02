@@ -10,36 +10,34 @@ exports.handler = async (event) => {
   try {
     const decoded = verifyToken(event);
     if (!decoded || !decoded.userId) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+      return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized: Invalid token' }) };
     }
 
     const db = await connectToDatabase();
-    // --- THIS IS THE FIX ---
-    // Use the 'Calorie' model, which is correctly mapped to your 'energy' collection.
     const Calorie = db.model('Calorie');
 
-    // Find the TDEE data for the logged-in user
     const calorieData = await Calorie.findOne({ userId: decoded.userId });
 
-    // If no data is found (e.g., for a new user), return a default value.
+    // If a new user hasn't updated their profile yet, return a sensible default TDEE.
     if (!calorieData || !calorieData.tdee) {
       return { 
         statusCode: 200, 
-        body: JSON.stringify({ tdee: 2000 }) // Default TDEE
+        body: JSON.stringify({ tdee: 2000 }) // Default TDEE value
       };
     }
     
-    // If data is found, return it.
+    // If TDEE data exists, return it.
     return { 
       statusCode: 200, 
       body: JSON.stringify({ tdee: Math.round(calorieData.tdee) }) 
     };
 
   } catch (error) {
-    console.error('Error fetching TDEE:', error);
+    console.error('Error in user-tdee function:', error);
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized: ' + error.message }) };
     }
     return { statusCode: 500, body: JSON.stringify({ error: 'Internal server error' }) };
   }
 };
+
