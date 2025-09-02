@@ -2,8 +2,8 @@
 
 const mongoose = require('mongoose');
 
-// Step 1: We still require the models at the top level.
-// This loads their schemas into the main mongoose object's "master catalog".
+// Step 1: Load all model blueprints into Mongoose's main "master catalog".
+// This happens once when the function starts.
 require('../../../models/User');
 require('../../../models/calorie');
 require('../../../models/FoodItem');
@@ -11,6 +11,7 @@ require('../../../models/FoodItem');
 let cachedConnection = null;
 
 const connectToDatabase = async () => {
+  // Use the cached connection if it's available and healthy.
   if (cachedConnection && cachedConnection.readyState === 1) {
     console.log('Using existing cached database connection.');
     return cachedConnection;
@@ -18,20 +19,21 @@ const connectToDatabase = async () => {
   
   try {
     console.log('Creating new database connection...');
+    // Create a new, fresh connection (the "new librarian").
     const connection = await mongoose.createConnection(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
       bufferCommands: false,
     });
 
     // --- THIS IS THE CRUCIAL FIX ---
-    // Step 2: We take the "master catalog" from the main mongoose object
-    // and manually copy every model blueprint to our new connection.
-    // This is like giving the new librarian a copy of the main catalog.
+    // Step 2: Manually copy every model blueprint from the "master catalog"
+    // onto our new connection. This gives the "new librarian" the book list.
     for (const [name, schema] of Object.entries(mongoose.models)) {
-      connection.model(name, schema.schema); // Register each model on the new connection
+      connection.model(name, schema.schema); 
     }
     // --------------------------------
 
+    // Wait for the connection to be fully open and ready.
     await connection.asPromise();
 
     cachedConnection = connection;
@@ -40,6 +42,7 @@ const connectToDatabase = async () => {
 
   } catch (error) {
     console.error('Database connection failed:', error);
+    // Rethrow the error so the calling function (login/signup) knows it failed.
     throw error;
   }
 };
