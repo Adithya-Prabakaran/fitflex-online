@@ -400,51 +400,45 @@
 
     // --- API CALLS ---
     async function loadFoodDatabaseFromMongoDB(token) {
-        document.getElementById('loading').style.display = 'block';
-        try {
-            const response = await fetch('/api/getFoodItems', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (response.status === 401) { logout(); return; }
-            if (!response.ok) { throw new Error('Failed to fetch food data'); }
-            
-            const data = await response.json();
+    document.getElementById('loading').style.display = 'block';
+    try {
+        const response = await fetch('/api/getFoodItems', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.status === 401) { logout(); return; }
+        if (!response.ok) { throw new Error(`Server error: ${response.status}`); }
+        
+        const data = await response.json();
+        
+        foodDatabase = {};
+        healthyFoods = {};
+        unhealthyFoods = {};
 
-            foodDatabase = {};
-            healthyFoods = {};
-            unhealthyFoods = {};
-            bestForYouFoods = {};
+        // --- THE FINAL, CORRECT PARSING LOGIC ---
+        data.forEach(item => {
+            const foodName = (item.Food)?.toLowerCase().trim();
+            const calories = parseFloat(item.Calories);
+            const category = (item.HealthQuotient)?.toLowerCase().trim();
 
-            // --- THIS IS THE DEFINITIVE FIX ---
-            // The code now reads "HealthQuotient" to match your database exactly.
-            data.forEach(item => {
-                const foodName = (item.Food)?.toLowerCase().trim();
-                const calories = parseFloat(item.Calories); // parseFloat handles "202 cal" correctly
-                const category = (item.HealthQuotient)?.toLowerCase().trim();
-
-                if (foodName && !isNaN(calories)) {
-                    foodDatabase[foodName] = calories;
-                    
-                    if (category === 'healthy') {
-                        healthyFoods[foodName] = calories;
-                    } else {
-                        unhealthyFoods[foodName] = calories;
-                    }
-                    if (category === 'best for you') {
-                         bestForYouFoods[foodName] = calories;
-                    }
+            if (foodName && !isNaN(calories)) {
+                foodDatabase[foodName] = calories;
+                if (category === 'healthy') {
+                    healthyFoods[foodName] = calories;
+                } else {
+                    unhealthyFoods[foodName] = calories;
                 }
-            });
-            // ------------------------------------
+            }
+        });
+        // ------------------------------------------
 
-        } catch (error) {
-            console.error('Failed to load food database:', error);
-            alert('Failed to load food database from server. Please try refreshing.');
-        } finally {
-            document.getElementById('loading').style.display = 'none';
-        }
+    } catch (error) {
+        console.error('Failed to load food database:', error);
+        alert('Could not load food data. Please try refreshing the page.');
+    } finally {
+        document.getElementById('loading').style.display = 'none';
     }
+}
 
     async function fetchUserTDEE(token) {
         try {
