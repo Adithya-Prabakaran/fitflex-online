@@ -9,6 +9,11 @@ exports.handler = async (event) => {
   }
 
   try {
+    if (process.env.JWT_SECRET) {
+          console.log('SUCCESS: The JWT_SECRET environment variable is defined.');
+        } else {
+          console.error('ERROR: The JWT_SECRET environment variable is UNDEFINED.');
+        }
     const db = await connectToDatabase();
     const User = db.model('User');
     const { email, password } = JSON.parse(event.body);
