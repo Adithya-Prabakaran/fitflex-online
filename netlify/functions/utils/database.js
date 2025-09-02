@@ -2,8 +2,8 @@
 
 const mongoose = require('mongoose');
 
-// Step 1: Load all model blueprints into Mongoose's main "master catalog".
-// This happens once when the function starts.
+// Step 1: Requiring the corrected model files now properly registers them
+// with Mongoose's main "master catalog".
 require('../../../models/User');
 require('../../../models/calorie');
 require('../../../models/FoodItem');
@@ -11,7 +11,6 @@ require('../../../models/FoodItem');
 let cachedConnection = null;
 
 const connectToDatabase = async () => {
-  // Use the cached connection if it's available and healthy.
   if (cachedConnection && cachedConnection.readyState === 1) {
     console.log('Using existing cached database connection.');
     return cachedConnection;
@@ -19,21 +18,17 @@ const connectToDatabase = async () => {
   
   try {
     console.log('Creating new database connection...');
-    // Create a new, fresh connection (the "new librarian").
     const connection = await mongoose.createConnection(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
       bufferCommands: false,
     });
 
-    // --- THIS IS THE CRUCIAL FIX ---
-    // Step 2: Manually copy every model blueprint from the "master catalog"
-    // onto our new connection. This gives the "new librarian" the book list.
+    // Step 2: This loop now works correctly because the models
+    // from Step 1 are available in mongoose.models to be copied over.
     for (const [name, schema] of Object.entries(mongoose.models)) {
       connection.model(name, schema.schema); 
     }
-    // --------------------------------
 
-    // Wait for the connection to be fully open and ready.
     await connection.asPromise();
 
     cachedConnection = connection;
@@ -42,10 +37,8 @@ const connectToDatabase = async () => {
 
   } catch (error) {
     console.error('Database connection failed:', error);
-    // Rethrow the error so the calling function (login/signup) knows it failed.
     throw error;
   }
 };
 
 module.exports = connectToDatabase;
-
