@@ -17,7 +17,12 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ message: 'Email and password are required' }) };
     }
 
-    const user = await User.findOne({ email });
+    // --- THE IMPROVEMENT ---
+    // Always check for the lowercase version of the email
+    const lowerCaseEmail = email.toLowerCase();
+    const user = await User.findOne({ email: lowerCaseEmail });
+    // ----------------------
+    
     if (!user) {
       return { statusCode: 401, body: JSON.stringify({ success: false, message: 'Invalid credentials' }) };
     }
@@ -27,11 +32,10 @@ exports.handler = async (event) => {
       return { statusCode: 401, body: JSON.stringify({ success: false, message: 'Invalid credentials' }) };
     }
 
-    // Create a JWT token containing user info, signed with your secret
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' } // Token is valid for 7 days
+      { expiresIn: '7d' }
     );
 
     return {
@@ -43,3 +47,4 @@ exports.handler = async (event) => {
     return { statusCode: 500, body: JSON.stringify({ success: false, message: 'Error logging in' }) };
   }
 };
+
