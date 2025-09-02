@@ -1,6 +1,7 @@
 // file: netlify/functions/signup.js
 const connectToDatabase = require('./utils/database');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken'); // <-- 1. IMPORT JWT
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -13,20 +14,37 @@ exports.handler = async (event) => {
     const { name, email, age, gender, password } = JSON.parse(event.body);
 
     if (!name || !email || !age || !gender || !password) {
-      return { statusCode: 400, body: 'All fields are required' };
+      return { statusCode: 400, body: JSON.stringify({ error: 'All fields are required' }) };
     }
 
-    const existingUser = await User.findOne({ email });
+    // It's good practice to normalize the email to lowercase
+    const lowerCaseEmail = email.toLowerCase();
+    const existingUser = await User.findOne({ email: lowerCaseEmail });
     if (existingUser) {
-      return { statusCode: 409, body: 'Email already registered' };
+      return { statusCode: 409, body: JSON.stringify({ error: 'Email already registered' }) };
     }
 
-    const newUser = new User({ name, email, age, gender, password });
+    const newUser = new User({ name, email: lowerCaseEmail, age, gender, password });
     await newUser.save();
 
-    return { statusCode: 201, body: 'Registration successful!' };
+    // --- THIS IS THE CRITICAL FIX ---
+    // 2. Create a JWT token immediately after saving the user
+    const token = jwt.sign(
+      { userId: newUser._id, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' } // Token is valid for 7 days
+    );
+
+    // 3. Return a JSON object with success and the new token
+    return {
+      statusCode: 201,
+      body: JSON.stringify({ success: true, message: 'Registration successful!', token: token })
+    };
+    // ---------------------------------
+
   } catch (err) {
     console.error('Signup Error:', err);
-    return { statusCode: 500, body: 'Error registering user' };
+    return { statusCode: 500, body: JSON.stringify({ error: 'Error registering user' }) };
   }
 };
+
