@@ -27,7 +27,7 @@ exports.handler = async (event) => {
     const newUser = new User({ name, email: lowerCaseEmail, age, gender, password });
     await newUser.save();
 
-    // --- THIS IS THE CRITICAL FIX ---
+    // --- THIS IS THE CRITICAL CHANGE ---
     // 2. Create a JWT token immediately after saving the user
     const token = jwt.sign(
       { userId: newUser._id, email: newUser.email },
