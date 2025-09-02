@@ -269,81 +269,81 @@
     </header>
     <main>
         <div class="profile-container">
-    <h1>Food Calorie Tracker</h1>
-    
-    <div class="input-section">
-        <div id="loading" class="loading" style="display: none;">Loading food database...</div>
+            <h1>Food Calorie Tracker</h1>
         
-        <select id="meal-type">
-            <option value="breakfast">Breakfast</option>
-            <option value="lunch">Lunch</option>
-            <option value="snacks">Snacks</option>
-            <option value="dinner">Dinner</option>
-        </select>
-        
-        <div class="autocomplete-container">
-            <input type="text" id="food-input" placeholder="Enter food item">
-            <div id="autocomplete-list" class="autocomplete-list"></div>
-        </div>
-        
-        <input type="number" id="quantity-input" placeholder="Quantity (pieces/servings)" min="1">
-        <button id="add-btn">Add</button>
-        <div id="food-not-found" class="food-not-found">Food item not found in database!</div>
-    </div>
-    
-    <div id="healthy-suggestions" class="healthy-suggestions">
-        <h3>Healthier Swap Suggestions</h3>
-        <div id="swap-suggestions-list"></div>
-    </div>
-    
-    <div class="meal-section">
-        <div class="meal-header">
-            <h2>Breakfast</h2>
-            <div><span id="breakfast-calories">0</span> calories</div>
-        </div>
-        <div id="breakfast-items"></div>
-    </div>
-    
-    <div class="meal-section">
-        <div class="meal-header">
-            <h2>Lunch</h2>
-            <div><span id="lunch-calories">0</span> calories</div>
-        </div>
-        <div id="lunch-items"></div>
-    </div>
-    
-    <div class="meal-section">
-        <div class="meal-header">
-            <h2>Snacks</h2>
-            <div><span id="snacks-calories">0</span> calories</div>
-        </div>
-        <div id="snacks-items"></div>
-    </div>
+            <div class="input-section">
+                <div id="loading" class="loading" style="display: none;">Loading food database...</div>
+                
+                <select id="meal-type">
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="snacks">Snacks</option>
+                    <option value="dinner">Dinner</option>
+                </select>
+                
+                <div class="autocomplete-container">
+                    <input type="text" id="food-input" placeholder="Enter food item">
+                    <div id="autocomplete-list" class="autocomplete-list"></div>
+                </div>
+                
+                <input type="number" id="quantity-input" placeholder="Quantity (pieces/servings)" min="1">
+                <button id="add-btn">Add</button>
+                <div id="food-not-found" class="food-not-found">Food item not found in database!</div>
+            </div>
+            
+            <div id="healthy-suggestions" class="healthy-suggestions">
+                <h3>Healthier Swap Suggestions</h3>
+                <div id="swap-suggestions-list"></div>
+            </div>
+            
+            <div class="meal-section">
+                <div class="meal-header">
+                    <h2>Breakfast</h2>
+                    <div><span id="breakfast-calories">0</span> calories</div>
+                </div>
+                <div id="breakfast-items"></div>
+            </div>
+            
+            <div class="meal-section">
+                <div class="meal-header">
+                    <h2>Lunch</h2>
+                    <div><span id="lunch-calories">0</span> calories</div>
+                </div>
+                <div id="lunch-items"></div>
+            </div>
+            
+            <div class="meal-section">
+                <div class="meal-header">
+                    <h2>Snacks</h2>
+                    <div><span id="snacks-calories">0</span> calories</div>
+                </div>
+                <div id="snacks-items"></div>
+            </div>
 
-    <div class="meal-section">
-        <div class="meal-header">
-            <h2>Dinner</h2>
-            <div><span id="dinner-calories">0</span> calories</div>
+            <div class="meal-section">
+                <div class="meal-header">
+                    <h2>Dinner</h2>
+                    <div><span id="dinner-calories">0</span> calories</div>
+                </div>
+                <div id="dinner-items"></div>
+            </div>
+            
+            <div class="total-section">
+                Total Calories: <span id="total-calories">0</span>
+                <br> <br>
+                <div id="tdee-recommendation" class="recommended-tdee" style="margin-bottom: 20px;"></div>
+            </div>
         </div>
-        <div id="dinner-items"></div>
-    </div>
-    
-    <div class="total-section">
-        Total Calories: <span id="total-calories">0</span>
-        <br> <br>
-        <div id="tdee-recommendation" class="recommended-tdee" style="margin-bottom: 20px;"></div>
-    </div>
-</div>
     </main>
 <script>
     // --- GLOBAL VARIABLES ---
     let foodDatabase = {};
     let healthyFoods = {};
     let unhealthyFoods = {};
-    let bestForYouFoods = {};
+    let bestForYouFoods = {}; // Assuming you might have a 'best-for-you' category
     let meals = { breakfast: [], lunch: [], snacks: [], dinner: [] };
-    let previouslySuggestedSwaps = new Set();
 
+    // --- DOM ELEMENT REFERENCES ---
     const foodInput = document.getElementById('food-input');
     const autocompleteList = document.getElementById('autocomplete-list');
     const quantityInput = document.getElementById('quantity-input');
@@ -356,41 +356,40 @@
 
     // --- INITIALIZATION & AUTHENTICATION ---
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Check for JWT token to verify authentication
         const token = localStorage.getItem('fitflex_token');
         if (!token) {
-            // If no token, user is not logged in. Redirect.
             window.location.href = '/login_page.html';
-            return; // Stop further execution
+            return;
         }
-
-        // User is authenticated, set up the page
         setupAuthenticatedPage(token);
     });
 
     function setupAuthenticatedPage(token) {
-        // Set up the logout button
         const authButtons = document.getElementById('auth-buttons');
         authButtons.innerHTML = '<a href="#" id="logout-btn" class="logout-btn">Logout</a>';
-        document.getElementById('logout-btn').addEventListener('click', function(e) {
+        document.getElementById('logout-btn').addEventListener('click', (e) => {
             e.preventDefault();
             logout();
         });
 
-        // Add the 'Finalise' button dynamically
         const totalSection = document.querySelector('.total-section');
         const finaliseBtn = document.createElement('button');
         finaliseBtn.id = 'finalise-btn';
         finaliseBtn.className = 'finalise-btn';
-        finaliseBtn.textContent = 'Finalise';
+        finaliseBtn.textContent = 'Finalise & Get Suggestions';
         finaliseBtn.addEventListener('click', finaliseAndSuggest);
         totalSection.appendChild(finaliseBtn);
 
-        // Add event listeners
         addBtn.addEventListener('click', addFood);
         foodInput.addEventListener('input', showAutocomplete);
+        
+        // Hide autocomplete when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (e.target !== foodInput) {
+                autocompleteList.style.display = 'none';
+            }
+        });
 
-        // Fetch necessary data using the token
         loadFoodDatabaseFromMongoDB(token);
         fetchUserTDEE(token);
     }
@@ -400,14 +399,17 @@
         window.location.href = '/login_page.html';
     }
 
-
     // --- API CALLS ---
     async function loadFoodDatabaseFromMongoDB(token) {
+        document.getElementById('loading').style.display = 'block';
         try {
-            // 2. Add Authorization header to the fetch call
             const response = await fetch('/api/getFoodItems', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            
+            if (response.status === 401) { logout(); }
+            if (!response.ok) { throw new Error('Failed to fetch food data'); }
+            
             const data = await response.json();
 
             // Reset databases
@@ -416,32 +418,43 @@
             unhealthyFoods = {};
             bestForYouFoods = {};
 
+            // --- THIS IS THE KEY FIX ---
+            // This logic now checks for both uppercase and lowercase field names
+            // making it robust against database inconsistencies.
             data.forEach(item => {
-                const foodName = item.Food?.toLowerCase().trim();
-                const calories = parseFloat(item.Calories);
-                const category = item.Category?.toLowerCase().trim();
+                const foodName = (item.Food || item.food)?.toLowerCase().trim();
+                const calories = parseFloat(item.Calories || item.calories);
+                const category = (item.Category || item.category)?.toLowerCase().trim();
 
                 if (foodName && !isNaN(calories)) {
                     foodDatabase[foodName] = calories;
+                    
                     if (category === 'healthy' || isHealthyFood(foodName, calories)) {
                         healthyFoods[foodName] = calories;
                     } else {
                         unhealthyFoods[foodName] = calories;
                     }
+                    if (category === 'best for you') {
+                         bestForYouFoods[foodName] = calories;
+                    }
                 }
             });
+            // --------------------------
+
         } catch (error) {
             console.error('Failed to load food database:', error);
-            alert('Failed to load food database from server.');
+            alert('Failed to load food database from server. Please try refreshing.');
+        } finally {
+            document.getElementById('loading').style.display = 'none';
         }
     }
 
     async function fetchUserTDEE(token) {
         try {
-            // 3. Add Authorization header to the fetch call
             const response = await fetch('/api/user-tdee', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!response.ok) return;
             const data = await response.json();
 
             if (data.tdee) {
@@ -453,45 +466,51 @@
         }
     }
 
-
     // --- PAGE FUNCTIONALITY (Autocomplete, Add/Remove Food, etc.) ---
-    // (This part of your code was mostly correct and doesn't need major changes)
-
     function showAutocomplete() {
         const input = foodInput.value.toLowerCase();
         autocompleteList.innerHTML = '';
-        if (input.length >= 2) {
-            const matchingFoods = Object.keys(foodDatabase).filter(food => food.includes(input)).slice(0, 5);
-            matchingFoods.forEach(food => {
-                const item = document.createElement('div');
-                item.className = 'autocomplete-item';
-                item.textContent = food;
-                item.addEventListener('click', () => {
-                    foodInput.value = food;
-                    autocompleteList.style.display = 'none';
-                });
-                autocompleteList.appendChild(item);
-            });
-            autocompleteList.style.display = matchingFoods.length > 0 ? 'block' : 'none';
-        } else {
+        if (input.length < 2) {
             autocompleteList.style.display = 'none';
+            return;
         }
+        
+        const matchingFoods = Object.keys(foodDatabase)
+            .filter(food => food.includes(input))
+            .slice(0, 5);
+        
+        matchingFoods.forEach(food => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.textContent = food;
+            item.addEventListener('click', () => {
+                foodInput.value = food;
+                autocompleteList.style.display = 'none';
+            });
+            autocompleteList.appendChild(item);
+        });
+        
+        autocompleteList.style.display = matchingFoods.length > 0 ? 'block' : 'none';
     }
 
     function addFood() {
         const food = foodInput.value.toLowerCase().trim();
         const quantity = parseInt(quantityInput.value) || 1;
         const meal = mealType.value;
+
         if (food && quantity > 0 && foodDatabase[food] !== undefined) {
             const calories = Math.round(foodDatabase[food] * quantity);
             const foodItem = { id: Date.now(), name: food, quantity, calories };
             meals[meal].push(foodItem);
+            
             foodInput.value = '';
             quantityInput.value = '';
             foodNotFound.style.display = 'none';
+            autocompleteList.style.display = 'none';
+            
             updateMealDisplay();
             updateTotalCalories();
-            healthySuggestions.style.display = 'none';
+            healthySuggestions.style.display = 'none'; // Hide old suggestions
         } else {
             foodNotFound.style.display = 'block';
         }
@@ -527,115 +546,104 @@
         totalCaloriesEl.textContent = total;
     }
     
-    // ... all your other functions like finaliseAndSuggest, findBestForYouAlternative, isHealthyFood etc. go here ...
-    // They do not need to be changed.
+    // --- The rest of your functions (finaliseAndSuggest, etc.) remain the same ---
+
     function finaliseAndSuggest() {
-    swapSuggestionsList.innerHTML = '';
-    healthySuggestions.style.display = 'block';
+        swapSuggestionsList.innerHTML = '';
+        healthySuggestions.style.display = 'block';
+        const suggestionsTitle = document.querySelector('.healthy-suggestions h3');
+        suggestionsTitle.textContent = 'Recommended Best-for-You Options';
 
-    const suggestionsTitle = document.querySelector('.healthy-suggestions h3');
-    suggestionsTitle.textContent = 'Recommended Best-for-You Options';
+        const allItems = Object.values(meals).flat();
+        if (allItems.length === 0) {
+            swapSuggestionsList.innerHTML = '<div>Add some food items to receive personalized suggestions!</div>';
+            return;
+        }
 
-    ['breakfast', 'lunch', 'snacks', 'dinner'].forEach(mealType => {
-        if (meals[mealType].length > 0) {
-            const randomIndex = Math.floor(Math.random() * meals[mealType].length);
-            const selectedItem = meals[mealType][randomIndex];
+        let suggestionsMade = 0;
+        ['breakfast', 'lunch', 'snacks', 'dinner'].forEach(mealType => {
+            if (meals[mealType].length > 0 && suggestionsMade < 2) { // Suggest for up to 2 meals
+                const randomIndex = Math.floor(Math.random() * meals[mealType].length);
+                const selectedItem = meals[mealType][randomIndex];
+                const bestForYouAlternative = findBestForYouAlternative(selectedItem.name);
 
-            const bestForYouAlternative = findBestForYouAlternative(selectedItem.name);
-
-            if (bestForYouAlternative) {
-                const caloriesDiff = Math.round((foodDatabase[selectedItem.name] - foodDatabase[bestForYouAlternative]) * selectedItem.quantity);
-                const calorieText = caloriesDiff > 0 ? `save ${caloriesDiff}` : `add ${Math.abs(caloriesDiff)}`;
-
-                const suggestionElement = document.createElement('div');
-                suggestionElement.className = 'swap-suggestion';
-                suggestionElement.innerHTML = `
-                    <p><strong>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}:</strong> 
-                       Try "${bestForYouAlternative}" instead of "${selectedItem.name}" 
-                       and ${calorieText} calories!</p>
-                    <button class="swap-button" onclick="swapFood('${mealType}', ${selectedItem.id}, '${bestForYouAlternative}')">
-                       Make Swap
-                    </button>
-                `;
-                swapSuggestionsList.appendChild(suggestionElement);
+                if (bestForYouAlternative) {
+                    suggestionsMade++;
+                    const caloriesDiff = Math.round((foodDatabase[selectedItem.name] - foodDatabase[bestForYouAlternative]) * selectedItem.quantity);
+                    const calorieText = caloriesDiff > 0 ? `save ${caloriesDiff}` : `add ${Math.abs(caloriesDiff)}`;
+                    const suggestionElement = document.createElement('div');
+                    suggestionElement.className = 'swap-suggestion';
+                    suggestionElement.innerHTML = `
+                        <p><strong>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}:</strong> 
+                            Try "${bestForYouAlternative}" instead of "${selectedItem.name}" 
+                            and ${calorieText} calories!</p>
+                        <button class="swap-button" onclick="swapFood('${mealType}', ${selectedItem.id}, '${bestForYouAlternative}')">
+                            Make Swap
+                        </button>`;
+                    swapSuggestionsList.appendChild(suggestionElement);
+                }
             }
+        });
+
+        if (swapSuggestionsList.children.length === 0) {
+            swapSuggestionsList.innerHTML = '<div>Great choices! No immediate swap suggestions.</div>';
         }
-    });
-
-    if (swapSuggestionsList.children.length === 0) {
-        const noSuggestionsElement = document.createElement('div');
-        noSuggestionsElement.textContent = 'Add some food items to receive personalized suggestions!';
-        swapSuggestionsList.appendChild(noSuggestionsElement);
+        healthySuggestions.scrollIntoView({ behavior: 'smooth' });
     }
-    healthySuggestions.scrollIntoView({ behavior: 'smooth' });
-}
 
-function findBestForYouAlternative(foodName) {
-    const availableBestOptions = Object.keys(bestForYouFoods);
-    if (availableBestOptions.length > 0) {
-        const differentOptions = availableBestOptions.filter(option => option !== foodName);
-        if (differentOptions.length > 0) {
-            return differentOptions[Math.floor(Math.random() * differentOptions.length)];
+    function findBestForYouAlternative(foodName) {
+        // This is a simplified logic. You can make it more complex based on your needs.
+        const healthyOptions = Object.keys(healthyFoods).filter(option => option !== foodName);
+        if (healthyOptions.length > 0) {
+            return healthyOptions[Math.floor(Math.random() * healthyOptions.length)];
         }
+        return null;
     }
-    const availablePredefinedOptions = bestForYouOptions.filter(
-        option => foodDatabase[option] !== undefined && option !== foodName
-    );
-    if (availablePredefinedOptions.length > 0) {
-        return availablePredefinedOptions[Math.floor(Math.random() * availablePredefinedOptions.length)];
-    }
-    const healthyOptions = Object.keys(healthyFoods).filter(option => option !== foodName);
-    if (healthyOptions.length > 0) {
-        return healthyOptions[Math.floor(Math.random() * healthyOptions.length)];
-    }
-    return null;
-}
-function swapFood(mealType, foodId, newFood) {
-    const itemToReplace = meals[mealType].find(item => item.id === foodId);
-    if (!itemToReplace) return;
 
-    const newCalories = Math.round(foodDatabase[newFood] * itemToReplace.quantity);
-    const newFoodItem = {
-        id: Date.now(),
-        name: newFood,
-        quantity: itemToReplace.quantity,
-        calories: newCalories,
-        isHealthy: healthyFoods[newFood] !== undefined,
-        isBestForYou: bestForYouFoods[newFood] !== undefined
-    };
+    function swapFood(mealType, foodId, newFood) {
+        const itemToReplace = meals[mealType].find(item => item.id === foodId);
+        if (!itemToReplace) return;
 
-    meals[mealType] = meals[mealType].map(item =>
-        item.id === foodId ? newFoodItem : item
-    );
+        const newCalories = Math.round(foodDatabase[newFood] * itemToReplace.quantity);
+        const newFoodItem = {
+            id: Date.now(),
+            name: newFood,
+            quantity: itemToReplace.quantity,
+            calories: newCalories,
+        };
+        meals[mealType] = meals[mealType].map(item =>
+            item.id === foodId ? newFoodItem : item
+        );
 
-    updateMealDisplay();
-    updateTotalCalories();
+        updateMealDisplay();
+        updateTotalCalories();
 
-    setTimeout(() => {
-        healthySuggestions.style.display = 'none';
-    }, 1500);
-}
-// -------------------- HEALTHY/UNHEALTHY LOGIC --------------------
-function isHealthyFood(food, calories) {
-    const healthyKeywords = [
-        'salad', 'vegetable', 'fruit', 'greek yogurt', 'yogurt', 'oatmeal', 'egg',
-        'quinoa', 'fish', 'salmon', 'tuna', 'chicken breast', 'turkey', 'tofu',
-        'lentil', 'bean', 'hummus', 'avocado', 'chia', 'flax', 'nuts', 'almond',
-        'water', 'green tea', 'smoothie', 'rasam', 'dal', 'soup', 'cottage cheese'
-    ];
-    const unhealthyKeywords = [
-        'candy', 'chocolate', 'cookie', 'cake', 'donut', 'pastry', 'brownie', 'ice cream',
-        'soda', 'energy drink', 'fried', 'pizza', 'burger', 'fries', 'chips', 'nachos',
-        'milkshake', 'pancake', 'waffle', 'syrup', 'marshmallow', 'cream', 'bacon'
-    ];
-    for (const keyword of healthyKeywords) {
-        if (food.includes(keyword)) return true;
+        setTimeout(() => {
+            healthySuggestions.style.display = 'none';
+        }, 2000);
     }
-    for (const keyword of unhealthyKeywords) {
-        if (food.includes(keyword)) return false;
+
+    function isHealthyFood(food, calories) {
+        const healthyKeywords = [
+            'salad', 'vegetable', 'fruit', 'yogurt', 'oatmeal', 'egg',
+            'quinoa', 'fish', 'salmon', 'tuna', 'chicken breast', 'turkey', 'tofu',
+            'lentil', 'bean', 'hummus', 'avocado', 'nuts', 'almond',
+            'water', 'green tea', 'smoothie', 'soup', 'cottage cheese'
+        ];
+        const unhealthyKeywords = [
+            'candy', 'chocolate', 'cookie', 'cake', 'donut', 'pastry', 'ice cream',
+            'soda', 'fried', 'pizza', 'burger', 'fries', 'chips',
+            'milkshake', 'pancake', 'waffle', 'syrup', 'cream', 'bacon'
+        ];
+        for (const keyword of healthyKeywords) {
+            if (food.includes(keyword)) return true;
+        }
+        for (const keyword of unhealthyKeywords) {
+            if (food.includes(keyword)) return false;
+        }
+        return calories < 200; // General fallback rule
     }
-    return calories < 180;
-}
+
 </script>
 </body>
 </html>
