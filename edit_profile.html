@@ -355,6 +355,34 @@
         }
     }
 
+    function updateCalculations() {
+        const age = parseFloat(document.getElementById('age').value);
+        const gender = document.getElementById('gender').value;
+        const height = parseFloat(document.getElementById('height').value);
+        const weight = parseFloat(document.getElementById('weight').value);
+        const activityLevel = document.getElementById('activityLevel').value;
+
+        if (age && gender && height && weight && activityLevel) {
+            let bmr;
+            if (gender.toLowerCase() === 'male') {
+                bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+            } else { // female & other
+                bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+            }
+
+            const activityMultipliers = {
+                'Sedentary': 1.2, 'Lightly active': 1.375, 'Moderately active': 1.55,
+                'Very active': 1.725, 'Extra active': 1.9
+            };
+            const tdee = bmr * (activityMultipliers[activityLevel] || 1.2);
+
+            bmrDisplay.textContent = Math.round(bmr);
+            tdeeDisplay.textContent = Math.round(tdee);
+            calculationsDisplay.style.display = 'block';
+        } else {
+            calculationsDisplay.style.display = 'none';
+        }
+    }
 
     // --- HELPER FUNCTIONS (No changes needed here) ---
     function calculateBMI() {
@@ -396,3 +424,4 @@
 </script>
 </body>
 </html>
+
