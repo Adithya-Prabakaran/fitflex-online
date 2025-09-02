@@ -1,29 +1,28 @@
-// File: /models/FoodItem.js
+// File: models/FoodItem.js
 
 const mongoose = require('mongoose');
 
-// This schema defines the structure of a document in your 'fooditems' collection.
+// This schema is now tailored to the exact structure from your screenshot.
 const foodItemSchema = new mongoose.Schema({
-  // The 'Food' field is a string and is required.
-  Food: {
-    type: String,
-    required: true,
-  },
-  // The 'Calories' field is a number and is required.
-  Calories: {
-    type: Number,
-    required: true,
-  },
-  // The 'Category' field is a string, but it's optional.
-  Category: {
-    type: String,
-  },
+    Food: { type: String, required: true },
+    Serving: { type: String },
+    // Set to String to match the "202 cal" format in your database
+    Calories: { type: String, required: true },
+    Portions: { type: String },
+    Vegetarian: { type: String },
+    Carbs: { type: Number },
+    Protein: { type: Number },
+    Fat: { type: Number },
+    MealCategory: { type: String },
+    // Corrected to use 'HealthQuotient' as seen in your database
+    HealthQuotient: { type: String }
 }, {
-  // This option explicitly tells Mongoose to use the 'fooditems' collection.
-  // This is important for preventing Mongoose from trying to use a collection named "fooditems" (plural).
-  collection: 'fooditems'
+    // It's still good practice to keep strict: false to allow for any
+    // other fields that might be in some of your documents.
+    strict: false,
+    // This explicitly tells Mongoose to use your 'fooditems' collection.
+    collection: 'fooditems'
 });
 
-// Create and export the Mongoose model.
-// Now, your application knows what a "FoodItem" is.
 module.exports = mongoose.model('FoodItem', foodItemSchema);
+
