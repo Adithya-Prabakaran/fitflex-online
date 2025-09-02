@@ -340,7 +340,7 @@
     let foodDatabase = {};
     let healthyFoods = {};
     let unhealthyFoods = {};
-    let bestForYouFoods = {}; // Assuming you might have a 'best-for-you' category
+    let bestForYouFoods = {};
     let meals = { breakfast: [], lunch: [], snacks: [], dinner: [] };
 
     // --- DOM ELEMENT REFERENCES ---
@@ -383,7 +383,6 @@
         addBtn.addEventListener('click', addFood);
         foodInput.addEventListener('input', showAutocomplete);
         
-        // Hide autocomplete when clicking elsewhere
         document.addEventListener('click', (e) => {
             if (e.target !== foodInput) {
                 autocompleteList.style.display = 'none';
@@ -407,29 +406,27 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
-            if (response.status === 401) { logout(); }
+            if (response.status === 401) { logout(); return; }
             if (!response.ok) { throw new Error('Failed to fetch food data'); }
             
             const data = await response.json();
 
-            // Reset databases
             foodDatabase = {};
             healthyFoods = {};
             unhealthyFoods = {};
             bestForYouFoods = {};
 
-            // --- THIS IS THE KEY FIX ---
-            // This logic now checks for both uppercase and lowercase field names
-            // making it robust against database inconsistencies.
+            // --- THIS IS THE DEFINITIVE FIX ---
+            // The code now reads "HealthQuotient" to match your database exactly.
             data.forEach(item => {
-                const foodName = (item.Food || item.food)?.toLowerCase().trim();
-                const calories = parseFloat(item.Calories || item.calories);
-                const category = (item.Category || item.category)?.toLowerCase().trim();
+                const foodName = (item.Food)?.toLowerCase().trim();
+                const calories = parseFloat(item.Calories); // parseFloat handles "202 cal" correctly
+                const category = (item.HealthQuotient)?.toLowerCase().trim();
 
                 if (foodName && !isNaN(calories)) {
                     foodDatabase[foodName] = calories;
                     
-                    if (category === 'healthy' || isHealthyFood(foodName, calories)) {
+                    if (category === 'healthy') {
                         healthyFoods[foodName] = calories;
                     } else {
                         unhealthyFoods[foodName] = calories;
@@ -439,7 +436,7 @@
                     }
                 }
             });
-            // --------------------------
+            // ------------------------------------
 
         } catch (error) {
             console.error('Failed to load food database:', error);
@@ -460,7 +457,7 @@
         } catch (error) { console.error('Error fetching TDEE:', error); }
     }
 
-    // --- PAGE FUNCTIONALITY (Autocomplete, Add/Remove Food, etc.) ---
+    // --- PAGE FUNCTIONALITY ---
     function showAutocomplete() {
         const input = foodInput.value.toLowerCase();
         autocompleteList.innerHTML = '';
@@ -504,7 +501,7 @@
             
             updateMealDisplay();
             updateTotalCalories();
-            healthySuggestions.style.display = 'none'; // Hide old suggestions
+            healthySuggestions.style.display = 'none';
         } else {
             foodNotFound.style.display = 'block';
         }
@@ -540,8 +537,6 @@
         totalCaloriesEl.textContent = total;
     }
     
-    // --- The rest of your functions (finaliseAndSuggest, etc.) remain the same ---
-
     function finaliseAndSuggest() {
         swapSuggestionsList.innerHTML = '';
         healthySuggestions.style.display = 'block';
@@ -556,7 +551,7 @@
 
         let suggestionsMade = 0;
         ['breakfast', 'lunch', 'snacks', 'dinner'].forEach(mealType => {
-            if (meals[mealType].length > 0 && suggestionsMade < 2) { // Suggest for up to 2 meals
+            if (meals[mealType].length > 0 && suggestionsMade < 2) {
                 const randomIndex = Math.floor(Math.random() * meals[mealType].length);
                 const selectedItem = meals[mealType][randomIndex];
                 const bestForYouAlternative = findBestForYouAlternative(selectedItem.name);
@@ -586,7 +581,6 @@
     }
 
     function findBestForYouAlternative(foodName) {
-        // This is a simplified logic. You can make it more complex based on your needs.
         const healthyOptions = Object.keys(healthyFoods).filter(option => option !== foodName);
         if (healthyOptions.length > 0) {
             return healthyOptions[Math.floor(Math.random() * healthyOptions.length)];
@@ -635,7 +629,7 @@
         for (const keyword of unhealthyKeywords) {
             if (food.includes(keyword)) return false;
         }
-        return calories < 200; // General fallback rule
+        return calories < 200;
     }
 
 </script>
