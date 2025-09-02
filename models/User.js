@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   age: { type: Number },
-  gender: { type: String },
+  gender: { type: String,
+    enum: ['male', 'female', 'non-binary', 'prefer-not-to-say'] },
   height: { type: Number }, // in cm
   weight: { type: Number }, // in kg
   activityLevel: {
