@@ -451,19 +451,13 @@
 
     async function fetchUserTDEE(token) {
         try {
-            const response = await fetch('/api/user-tdee', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await fetch('/api/user-tdee', { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) return;
             const data = await response.json();
-
             if (data.tdee) {
-                const tdeeElement = document.getElementById('tdee-recommendation');
-                tdeeElement.textContent = `Personal Recommended Daily Intake: ${Math.round(data.tdee)} calories`;
+                document.getElementById('tdee-recommendation').textContent = `Personal Recommended Daily Intake: ${Math.round(data.tdee)} calories`;
             }
-        } catch (error) {
-            console.error('Error fetching TDEE:', error);
-        }
+        } catch (error) { console.error('Error fetching TDEE:', error); }
     }
 
     // --- PAGE FUNCTIONALITY (Autocomplete, Add/Remove Food, etc.) ---
