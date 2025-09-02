@@ -2,39 +2,33 @@
 
 const mongoose = require('mongoose');
 
-// A variable to cache the database connection.
-// This is a crucial optimization for serverless functions.
+// A variable to cache the database connection for performance in serverless environments.
 let cachedConnection = null;
 
-// --- A helper function to define and register models only once ---
+// A helper function to define and register models only once per connection.
 const registerModels = (connection) => {
   // Check if models are already compiled to prevent OverwriteModelError
   if (Object.keys(connection.models).length === 0) {
+    console.log('Registering Mongoose models...');
     
     // Import your schema definitions
-    // This path assumes your 'models' folder is at the project root.
     const UserSchema = require('../../../models/User').schema;
-    const BmiSchema = require('../../../models/BMI').schema;
     const CalorieSchema = require('../../../models/calorie').schema;
     
-    // A generic schema for the food items. `strict: false` allows any fields.
+    // A generic schema for the food items collection.
     const FoodSchema = new mongoose.Schema({}, { strict: false });
 
     // Register all models on the connection object.
-    // The 3rd argument explicitly sets the collection name in MongoDB Atlas.
-    connection.model('User', UserSchema);
-    connection.model('BMI', BmiSchema, 'bmi');
-    connection.model('FoodItem', FoodSchema, 'fooditems');
-    
-    // --- THIS IS THE KEY FIX ---
-    // Register the 'Calorie' model to save to the 'energy' collection.
+    // The explicit third argument sets the collection name in MongoDB Atlas.
+    connection.model('User', UserSchema, 'users');
     connection.model('Calorie', CalorieSchema, 'energy');
+    connection.model('FoodItem', FoodSchema, 'fooditems');
+    // The BMI model registration has been correctly removed.
   }
 };
 
-
 const connectToDatabase = async () => {
-  // If a connection is already cached, reuse it and return.
+  // If a connection is already cached, reuse it.
   if (cachedConnection) {
     console.log('Using existing cached database connection.');
     return cachedConnection;
@@ -44,23 +38,20 @@ const connectToDatabase = async () => {
   try {
     console.log('Creating new database connection...');
     const connection = await mongoose.createConnection(process.env.MONGODB_URI, {
-      // These options are highly recommended for serverless environments
       serverSelectionTimeoutMS: 5000,
-      bufferCommands: false, // Disable Mongoose's buffering
+      bufferCommands: false, // Recommended for serverless
     });
 
-    // Register all of your schemas on the new connection
     registerModels(connection);
 
-    // Cache the connection for future function invocations
     cachedConnection = connection;
     return cachedConnection;
 
   } catch (error) {
     console.error('Database connection failed:', error);
-    // Rethrow the error to be caught by the calling function
     throw error;
   }
 };
 
 module.exports = connectToDatabase;
+
