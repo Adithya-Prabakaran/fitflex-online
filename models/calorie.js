@@ -18,5 +18,7 @@ calorieSchema.pre('save', function(next) {
     next();
 });
 
-// This is the fix: It exports a Mongoose model and specifies the correct collection name.
+// --- THIS IS THE CRUCIAL FIX for the collection name ---
+// The third argument explicitly forces Mongoose to use the 'energy' collection.
 module.exports = mongoose.model('Calorie', calorieSchema, 'energy');
+
