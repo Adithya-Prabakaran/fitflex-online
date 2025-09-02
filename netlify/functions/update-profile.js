@@ -15,80 +15,54 @@ exports.handler = async (event) => {
 
     const db = await connectToDatabase();
     const User = db.model('User');
-    const BMI = db.model('BMI');
-    // --- THIS IS THE FIX ---
-    // Use the 'Calorie' model name, which your database.js file maps to the 'energy' collection.
     const Calorie = db.model('Calorie'); 
     
     const data = JSON.parse(event.body);
 
-    const user = await User.findById(decoded.userId);
-    if (!user) {
+    // Find the user and update all their profile fields in a single, efficient operation.
+    // All logic related to the old BMI collection has been completely removed.
+    const updatedUser = await User.findByIdAndUpdate(
+        decoded.userId,
+        { $set: {
+            name: data.name,
+            age: data.age,
+            gender: data.gender,
+            height: data.height,
+            weight: data.weight,
+            activityLevel: data.activityLevel,
+        }},
+        { new: true, runValidators: true } // 'new: true' returns the updated document
+    );
+
+    if (!updatedUser) {
       return { statusCode: 404, body: JSON.stringify({ error: 'User not found' }) };
     }
 
-    // Update the main user document with the new profile data
-    user.name = data.name || user.name;
-    user.age = data.age || user.age;
-    user.gender = data.gender || user.gender;
-    user.height = data.height || user.height;
-    user.weight = data.weight || user.weight;
-    user.activityLevel = data.activityLevel || user.activityLevel;
-    await user.save();
-
-    // If all required fields are present, calculate and save BMR/TDEE
-    if (data.height && data.weight && data.age && data.gender && data.activityLevel) {
-      
-      // Update the 'bmi' collection
-      await BMI.findOneAndUpdate(
-        { email: user.email }, 
-        { 
-          height: data.height, 
-          weight: data.weight, 
-          bmi: data.bmi,
-          age: data.age,
-          gender: data.gender
-        }, 
-        { upsert: true, new: true }
-      );
-      
+    // Now, calculate and save BMR/TDEE using the reliable data from the updatedUser object.
+    if (updatedUser.height && updatedUser.weight && updatedUser.age && updatedUser.gender && updatedUser.activityLevel) {
       const activityMultipliers = {
-        'Sedentary': 1.2,
-        'Lightly active': 1.375,
-        'Moderately active': 1.55,
-        'Very active': 1.725,
-        'Extra active': 1.9
+        'Sedentary': 1.2, 'Lightly active': 1.375, 'Moderately active': 1.55,
+        'Very active': 1.725, 'Extra active': 1.9
       };
 
-      // Calculate BMR (Basal Metabolic Rate)
       let bmr;
-      if (data.gender.toLowerCase() === 'male') {
-        bmr = (10 * data.weight) + (6.25 * data.height) - (5 * data.age) + 5;
-      } else { // Covers 'female' and 'other'
-        bmr = (10 * data.weight) + (6.25 * data.height) - (5 * data.age) - 161;
+      if (updatedUser.gender.toLowerCase() === 'male') {
+        bmr = (10 * updatedUser.weight) + (6.25 * updatedUser.height) - (5 * updatedUser.age) + 5;
+      } else {
+        bmr = (10 * updatedUser.weight) + (6.25 * updatedUser.height) - (5 * updatedUser.age) - 161;
       }
 
-      // Calculate TDEE (Total Daily Energy Expenditure)
-      const activityFactor = activityMultipliers[data.activityLevel] || 1.2;
+      const activityFactor = activityMultipliers[updatedUser.activityLevel] || 1.2;
       const tdee = Math.round(bmr * activityFactor);
 
-      // Update the 'energy' collection using the 'Calorie' model
+      // Update or create the 'energy' document for this user.
       await Calorie.findOneAndUpdate(
-        { userId: user._id }, // Find the document by the user's ID
+        { userId: updatedUser._id },
         {
-          // $set updates these fields every time the profile is saved
-          $set: {
-            userId: user._id,
-            email: user.email,
-            bmr: Math.round(bmr),
-            tdee: tdee
-          },
-          // $setOnInsert only sets this field when the document is first created
-          $setOnInsert: {
-            createdAt: new Date()
-          }
+          $set: { bmr: Math.round(bmr), tdee: tdee },
+          $setOnInsert: { userId: updatedUser._id, createdAt: new Date() }
         },
-        { upsert: true, new: true } // Creates the document if it doesn't exist
+        { upsert: true, new: true }
       );
     }
 
@@ -98,10 +72,8 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('Error updating profile:', error);
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized: ' + error.message }) };
-    }
+    console.error('Error in update-profile function:', error);
     return { statusCode: 500, body: JSON.stringify({ error: 'An internal server error occurred.' }) };
   }
 };
+
