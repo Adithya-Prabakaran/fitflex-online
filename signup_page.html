@@ -160,7 +160,7 @@
             // 2. Save the token to localStorage, effectively logging the user in
             localStorage.setItem('fitflex_token', data.token);
             // 3. Redirect to the main home page, NOT the login page
-            window.location.href = 'home_page.html';
+            window.location.href = 'edit_profile.html';
           } else {
             // This case should not happen with the new backend, but it's good practice
             throw new Error('Registration succeeded but no token was provided.');
@@ -175,3 +175,4 @@
     </script> 
   </body>
 </html>
+
